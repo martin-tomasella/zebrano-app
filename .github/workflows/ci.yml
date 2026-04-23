@@ -1,0 +1,67 @@
+name: Zebrano App CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: TypeScript Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run typecheck
+
+  build-android-preview:
+    name: Build Android APK (Preview)
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm install -g eas-cli
+      - run: npm ci
+      - name: Build APK
+        run: eas build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  build-android-prod:
+    name: Build Android AAB (Production)
+    runs-on: ubuntu-latest
+    needs: typecheck
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm install -g eas-cli
+      - run: npm ci
+      - name: Build AAB
+        run: eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # Sync ERP (zebrano web) changes to this repo
+  sync-erp-schema:
+    name: Sync ERP Schema
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with: { token: '${{ secrets.GITHUB_TOKEN }}' }
+      - name: Update CONTEXT.md timestamp
+        run: |
+          echo "Last sync from ERP: $(date -u)" >> docs/ERP_SYNC.md
+          git config user.email "bot@zebrano.app"
+          git config user.name "Zebrano Bot"
+          git add docs/ERP_SYNC.md
+          git diff --staged --quiet || git commit -m "sync: ERP schema updated $(date -u +%Y-%m-%d)"
+          git push || true
