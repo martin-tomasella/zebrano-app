@@ -1,4 +1,4 @@
-{
+﻿{
   "expo": {
     "name": "Zebrano",
     "slug": "zebrano-app",
@@ -24,7 +24,11 @@
         "android.permission.INTERNET"
       ]
     },
-    "plugins": ["expo-router", "expo-secure-store"],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "./plugins/withKotlinVersion"
+    ],
     "extra": {
       "eas": { "projectId": "699fc2d9-0640-409b-a3f3-9a13a7f29dfb" },
       "supabaseUrl": "https://xsciujuvkbubnhhnpcix.supabase.co",
