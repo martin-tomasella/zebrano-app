@@ -1,4 +1,4 @@
-{
+﻿{
   "cli": { "version": ">= 12.0.0" },
   "build": {
     "development": {
@@ -10,7 +10,7 @@
       "android": { "buildType": "apk" }
     },
     "production": {
-      "android": { "buildType": "aab" }
+      "android": { "buildType": "app-bundle" }
     }
   },
   "submit": {
