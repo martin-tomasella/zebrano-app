@@ -16,7 +16,6 @@
       },
       "package": "com.martintomasella.zebrano",
       "versionCode": 1,
-      "kotlinVersion": "1.9.25",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -27,7 +26,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withKotlinVersion"
     ],
     "extra": {
       "eas": { "projectId": "699fc2d9-0640-409b-a3f3-9a13a7f29dfb" },
