@@ -1,101 +1,55 @@
-// src/lib/api.ts
-// Todas las llamadas a los webhooks de n8n y Edge Functions
+const SUPA_URL = 'https://xsciujuvkbubnhhnpcix.supabase.co';
+const SUPA_KEY = 'sb_publishable_gI_zCp__hlMim3bIhXX7jg_QwY5MwzZ';
 
-import Constants from 'expo-constants';
-
-const N8N_BASE = Constants.expoConfig?.extra?.n8nWebhookBase ?? 'https://n8n-n8n.z8ixjp.easypanel.host/webhook';
-const SUPABASE_URL = Constants.expoConfig?.extra?.supabaseUrl ?? '';
-
-// ── COTIZADOR AI ──────────────────────────────────────────
-export interface CotizadorInput {
-  sesion_id?: string;
-  mensaje?: string;
-  imagenes_base64?: string[];
-  origen?: string;
-  cliente_nombre?: string;
-}
-
-export interface CotizadorOutput {
-  ok: boolean;
-  sesion_id: string;
-  respuesta: string;
-  datos?: Record<string, unknown>;
-  resumen?: {
-    costoTotal: number;
-    precioSugerido: number;
-    margen: number;
-    hojas: Record<string, { hojas_reales: number; m2_neto: number }>;
-  };
-  error?: string;
-}
-
-export async function callCotizador(input: CotizadorInput): Promise<CotizadorOutput> {
-  const res = await fetch(`${N8N_BASE}/zebrano-cotizador`, {
+export async function chatCotizador(params) {
+  const res = await fetch(`${SUPA_URL}/functions/v1/zebrano-cotizador`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${SUPA_KEY}`,
+    },
+    body: JSON.stringify(params),
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-// ── LEADER ZEBRANO (comandos generales) ───────────────────
-export async function callLeader(comando: string, contexto = {}): Promise<{
-  ok: boolean;
-  intent: string;
-  respuesta_voz: string;
-  resultado: Record<string, unknown>;
-}> {
-  const res = await fetch(`${N8N_BASE}/zebrano-leader`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ comando, fuente: 'app_zebrano', contexto }),
-  });
-  return res.json();
-}
-
-// ── IMAGEN A BASE64 ───────────────────────────────────────
-export async function imageUriToBase64(uri: string): Promise<string> {
-  const response = await fetch(uri);
-  const blob = await response.blob();
+export async function imageToBase64(uri) {
+  const r = await fetch(uri);
+  const blob = await r.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      resolve(base64);
-    };
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 }
 
-// ── RENDER IA (Pollinations — gratuito) ───────────────────
-// Pollinations.ai es gratuito, no requiere API key
-export function generateRenderUrl(prompt: string, width = 1024, height = 768): string {
-  const encoded = encodeURIComponent(
-    `Interior design render, ${prompt}, photorealistic, modern Argentine carpentry, white melamine furniture, professional lighting, 4k quality`
-  );
-  return `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&nologo=true&enhance=true`;
+async function supaFetch(path, opts = {}) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Prefer': 'return=representation',
+      ...(opts.headers ?? {}),
+    },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
 
-// ── SUBIR IMAGEN A STORAGE ────────────────────────────────
-export async function uploadImageToProject(
-  projectId: string,
-  sesionId: string,
-  base64: string,
-  fileName: string
-): Promise<string | null> {
-  try {
-    const path = `proyectos/${projectId}/sesion_${sesionId}/${fileName}`;
-    const byteCharacters = atob(base64);
-    const byteNumbers = Array.from(byteCharacters, c => c.charCodeAt(0));
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: 'image/jpeg' });
-
-    const { createClient } = await import('@supabase/supabase-js');
-    const sb = createClient(SUPABASE_URL, Constants.expoConfig?.extra?.supabaseAnonKey ?? '');
-    const { error } = await sb.storage.from('zebrano-proyectos').upload(path, blob, { upsert: true });
-    if (error) return null;
-    const { data } = sb.storage.from('zebrano-proyectos').getPublicUrl(path);
-    return data.publicUrl;
-  } catch { return null; }
-}
+export const db = {
+  sesiones: {
+    list: () => supaFetch('cotizacion_sesiones?select=*,cotizacion_resumen(precio_sugerido,render_url)&order=created_at.desc&limit=50'),
+    get: (id) => supaFetch(`cotizacion_sesiones?id=eq.${id}&select=*,cotizacion_piezas(*),cotizacion_hojas(*),cotizacion_herrajes(*),cotizacion_mano_obra(*),cotizacion_resumen(*)&limit=1`).then(r => r[0]),
+  },
+  ot: {
+    activas: () => supaFetch('ordenes_trabajo?estado=neq.completada&order=created_at.desc&limit=20'),
+  },
+  config: {
+    placas: () => supaFetch('config_placas?activo=eq.true&order=material'),
+    herrajes: () => supaFetch('config_herrajes?activo=eq.true&order=nombre'),
+  },
+};
