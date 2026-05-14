@@ -92,17 +92,22 @@ function buildSVGHtml(svgContent: string): string {
 
 // ─── COMPONENTE SVG VIEWER ────────────────────────────────────────
 function NogalSVGViewer({
-  svgContent, sesionId, onAjustar, onAprobar, aprobando,
+  svgContent, sesionId, onAjustar, onAprobar, aprobando, onVerPlano,
 }: {
   svgContent: string; sesionId: string;
-  onAjustar: () => void; onAprobar: () => void; aprobando: boolean;
+  onAjustar: () => void; onAprobar: () => void; aprobando: boolean; onVerPlano: () => void;
 }) {
   const [cargando, setCargando] = useState(true);
   return (
     <View style={sv.wrap}>
       <View style={sv.header}>
-        <Text style={sv.title}>📐 Plano técnico — Nogal</Text>
-        <Text style={sv.sub}>Pellizcar para zoom · Doble tap para resetear</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={sv.title}>📐 Plano técnico — Nogal</Text>
+          <TouchableOpacity onPress={onVerPlano} style={{ backgroundColor: 'rgba(201,168,76,0.15)', padding: 6, borderRadius: 6 }}>
+            <Text style={{ color: C.gold, fontSize: 11 }}>⛶ Pantalla completa</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={sv.sub}>Pellizcar para zoom · Toca ⛶ para ver en pantalla completa</Text>
       </View>
       <View style={sv.wvBox}>
         {cargando && (
@@ -117,7 +122,6 @@ function NogalSVGViewer({
           scrollEnabled
           bounces={false}
           scalesPageToFit={false}
-          setSupportMultipleWindows={false}
           androidLayerType="hardware"
           onLoadEnd={() => setCargando(false)}
           showsHorizontalScrollIndicator={false}
@@ -183,6 +187,7 @@ export default function CotizadorScreen() {
   const [modalImg, setModalImg]       = useState<string | null>(null);
   const [aprobando, setAprobando]     = useState(false);
   const [aprobandoSVG, setAprobSVG]   = useState(false);
+  const [modalSvg, setModalSvg]         = useState<string | null>(null);
   const [otCreada, setOtCreada]       = useState<string | null>(null);
 
   const scroll = () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
@@ -375,6 +380,7 @@ export default function CotizadorScreen() {
                   onAjustar={() => { setInput('Ajustar: '); }}
                   onAprobar={aprobarSVG}
                   aprobando={aprobandoSVG}
+                  onVerPlano={() => setModalSvg(m.svgTecnico!)}
                 />
               )}
             </View>
@@ -459,6 +465,27 @@ export default function CotizadorScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* MODAL SVG PANTALLA COMPLETA */}
+      <Modal visible={!!modalSvg} transparent={false} animationType="slide" statusBarTranslucent>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#1a2020', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+            <Text style={{ color: '#c9a84c', fontSize: 14, fontWeight: '600' }}>📐 Plano técnico — Zoom libre</Text>
+            <TouchableOpacity onPress={() => setModalSvg(null)} style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: 8, borderRadius: 6 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>✕ Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+          {modalSvg && (
+            <WebView
+              source={{ html: buildSVGHtml(modalSvg) }}
+              style={{ flex: 1 }}
+              scrollEnabled
+              scalesPageToFit={false}
+              androidLayerType="hardware"
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* MODAL IMAGEN */}
       <Modal visible={!!modalImg} transparent animationType="fade" statusBarTranslucent>
