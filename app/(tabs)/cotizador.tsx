@@ -467,14 +467,19 @@ export default function CotizadorScreen() {
       </View>
 
       {/* MODAL SVG PANTALLA COMPLETA */}
-      <Modal visible={!!modalSvg} transparent={false} animationType="slide" statusBarTranslucent>
+      <Modal visible={!!modalSvg} transparent={false} animationType="slide" statusBarTranslucent onRequestClose={() => setModalSvg(null)}>
         <View style={{ flex: 1, backgroundColor: '#fff' }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#1a2020', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
-            <Text style={{ color: '#c9a84c', fontSize: 14, fontWeight: '600' }}>📐 Plano técnico — Zoom libre</Text>
-            <TouchableOpacity onPress={() => setModalSvg(null)} style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: 8, borderRadius: 6 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>✕ Cerrar</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: '#1a2020', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' }}>
+            <Text style={{ color: '#c9a84c', fontSize: 14, fontWeight: '600' }}>📐 Plano técnico</Text>
+            <TouchableOpacity
+              onPress={() => setModalSvg(null)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ backgroundColor: '#e06060', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 }}>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>✕ Cerrar</Text>
             </TouchableOpacity>
           </View>
+          <Text style={{ color: '#888', fontSize: 11, textAlign: 'center', paddingVertical: 6, backgroundColor: '#f5f5f5' }}>Pellizcar para zoom · Scroll para mover</Text>
           {modalSvg && (
             <WebView
               source={{ html: buildSVGHtml(modalSvg) }}
@@ -482,18 +487,35 @@ export default function CotizadorScreen() {
               scrollEnabled
               scalesPageToFit={false}
               androidLayerType="hardware"
+              bounces={false}
             />
           )}
         </View>
       </Modal>
 
-      {/* MODAL IMAGEN */}
-      <Modal visible={!!modalImg} transparent animationType="fade" statusBarTranslucent>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
-          {modalImg && <Image source={{ uri: modalImg }} style={{ width: SW, height: SH * 0.75 }} resizeMode="contain" />}
-          <TouchableOpacity style={[s.modalBtn, { marginTop: 16, borderColor: C.border }]} onPress={() => setModalImg(null)}>
-            <Text style={{ color: C.t3, fontSize: 13 }}>Cerrar</Text>
-          </TouchableOpacity>
+      {/* MODAL IMAGEN CON ZOOM */}
+      <Modal visible={!!modalImg} transparent={false} animationType="fade" statusBarTranslucent onRequestClose={() => setModalImg(null)}>
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: '#111' }}>
+            <Text style={{ color: '#c9a84c', fontSize: 13 }}>Render fotorrealista</Text>
+            <TouchableOpacity
+              onPress={() => setModalImg(null)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ backgroundColor: '#e06060', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 6 }}>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>✕ Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={{ color: '#555', fontSize: 11, textAlign: 'center', paddingVertical: 4, backgroundColor: '#111' }}>Pellizcar para zoom</Text>
+          {modalImg && (
+            <WebView
+              source={{ html: `<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=10.0,user-scalable=yes"/><style>*{margin:0;padding:0;background:#000}html,body{width:100%;height:100%;display:flex;align-items:center;justify-content:center}img{max-width:100%;height:auto;touch-action:pinch-zoom}</style></head><body><img src="${modalImg}" /></body></html>` }}
+              style={{ flex: 1, backgroundColor: '#000' }}
+              scrollEnabled
+              scalesPageToFit={false}
+              androidLayerType="hardware"
+            />
+          )}
         </View>
       </Modal>
     </KeyboardAvoidingView>
